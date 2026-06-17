@@ -63,23 +63,35 @@ result=$(printf '%s' "$input" | jq -r '
 IFS=$'\037' read -r used_h size_h ctx_pct sess_pct sess_reset week_pct week_reset ladd lrem effort think \
   pr_num pr_state model tpath <<< "$result"
 
-# --- Per-session token totals, summed from the transcript JSONL. -------------
-tok_in_h="" tok_out_h=""
+# --- Per-session token totals + last-turn cache hit, from the transcript. ----
+# Totals sum every call; "cache" is the cache-hit ratio of the most recent
+# main-thread call (cache_read / total input) — high means the turn was served
+# mostly from cache, which is also why the cumulative "in" grows so large.
+tok_in_h="" tok_out_h="" cache_pct=""
 if [ -n "$tpath" ] && [ -f "$tpath" ]; then
   toks=$(jq -nr --argjson reads "$TOKENS_INCLUDE_CACHE_READS" '
     def hum(n):
       if   n >= 1000000 then ((n/100000|floor)/10|tostring) + "M"
       elif n >= 1000    then ((n/1000)|round|tostring)       + "k"
       else (n|floor|tostring) end;
-    reduce inputs as $l ({i:0, o:0};
-      ($l.message.usage // {}) as $u
-      | .i += (($u.input_tokens // 0)
-               + ($u.cache_creation_input_tokens // 0)
-               + (if $reads == 1 then ($u.cache_read_input_tokens // 0) else 0 end))
-      | .o += ($u.output_tokens // 0))
-    | "\(hum(.i))\t\(hum(.o))"
+    reduce inputs as $l ({i:0, o:0, li:0, lcc:0, lcr:0};
+      if ($l.message.usage // null) == null then .
+      else
+        ($l.message.usage) as $u
+        | .i += (($u.input_tokens // 0)
+                 + ($u.cache_creation_input_tokens // 0)
+                 + (if $reads == 1 then ($u.cache_read_input_tokens // 0) else 0 end))
+        | .o += ($u.output_tokens // 0)
+        | if ($l.isSidechain // false) then .          # ignore subagent calls for "last turn"
+          else .li  = ($u.input_tokens // 0)
+             | .lcc = ($u.cache_creation_input_tokens // 0)
+             | .lcr = ($u.cache_read_input_tokens // 0) end
+      end)
+    | (.li + .lcc + .lcr) as $din
+    | (if $din > 0 then ((.lcr * 100 / $din) | floor) else -1 end) as $cpct
+    | "\(hum(.i))\t\(hum(.o))\t\($cpct)"
   ' "$tpath" 2>/dev/null)
-  IFS=$'\t' read -r tok_in_h tok_out_h <<< "$toks"
+  IFS=$'\t' read -r tok_in_h tok_out_h cache_pct <<< "$toks"
 fi
 
 # --- Colours. ----------------------------------------------------------------
@@ -149,6 +161,10 @@ if [ "$ladd" != "0" ] || [ "$lrem" != "0" ]; then
   line2+=("${green}+${ladd}${rst} ${red}-${lrem}${rst} ${dim}lines${rst}")
 fi
 [ -n "$tok_in_h" ] && line2+=("${dim}tok in ${tok_in_h} out ${tok_out_h}${rst}")
+if [ -n "$cache_pct" ] && [ "$cache_pct" -ge 0 ] 2>/dev/null; then
+  cc2="$teal"; [ "$cache_pct" -lt 90 ] && cc2="$amber"; [ "$cache_pct" -lt 50 ] && cc2="$red"
+  line2+=("${dim}cache ${cc2}${cache_pct}%${rst}")
+fi
 
 # Shorten the verbose 1M-context model name: "Opus 4.8 (1M context)" -> "Opus 4.8 1M".
 model="${model/ (1M context)/ 1M}"

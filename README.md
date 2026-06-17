@@ -48,6 +48,15 @@ top-level object — don't replace the file):
 
 Restart Claude Code (or open `/statusline`) to see it.
 
+#### Optional: sticky bottom bar
+
+To pin the input box + status line to the bottom of the terminal (they stay put
+while the conversation scrolls above), also add `"tui": "fullscreen"` to
+`~/.claude/settings.json`. It uses Claude Code's alt-screen renderer (like `vim`),
+so on quit the terminal restores to its prior screen — the conversation isn't left
+in native scrollback (it's still saved as a resumable session transcript). Requires
+Claude Code v2.1.153+; set back to `"default"` to revert.
+
 ### Requirements
 
 - **bash** and **jq** (`sudo dnf install jq`, or `apt`/`pacman`/`brew` equivalent).
