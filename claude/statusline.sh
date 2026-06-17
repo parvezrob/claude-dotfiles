@@ -160,7 +160,7 @@ fi
 if [ "$ladd" != "0" ] || [ "$lrem" != "0" ]; then
   line2+=("${green}+${ladd}${rst} ${red}-${lrem}${rst} ${dim}lines${rst}")
 fi
-[ -n "$tok_in_h" ] && line2+=("${dim}tok in ${tok_in_h} out ${tok_out_h}${rst}")
+[ -n "$tok_in_h" ] && line2+=("${dim}tok in ${rst}${teal}${tok_in_h}${rst}${dim} out ${rst}${teal}${tok_out_h}${rst}")
 if [ -n "$cache_pct" ] && [ "$cache_pct" -ge 0 ] 2>/dev/null; then
   cc2="$teal"; [ "$cache_pct" -lt 90 ] && cc2="$amber"; [ "$cache_pct" -lt 50 ] && cc2="$red"
   line2+=("${dim}cache ${cc2}${cache_pct}%${rst}")
