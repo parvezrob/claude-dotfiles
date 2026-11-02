@@ -1,0 +1,14 @@
+{
+  "name": "claude-dotfiles",
+  "owner": {
+    "name": "parvezrob"
+  },
+  "plugins": [
+    {
+      "name": "token-ledger",
+      "source": "./token-ledger",
+      "description": "Counts this session's tokens per model request and keeps a tiny per-session ledger the status line reads."
+    }
+  ],
+  "description": "Mods that back the status line in this repo."
+}

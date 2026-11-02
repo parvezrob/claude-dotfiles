@@ -1,0 +1,8 @@
+{
+  "name": "token-ledger",
+  "version": "0.2.0",
+  "description": "Counts this session's tokens per model request (main and subagents) into ~/.claude/token-ledger/<session>.json for the status line.",
+  "author": {
+    "name": "parvezrob"
+  }
+}

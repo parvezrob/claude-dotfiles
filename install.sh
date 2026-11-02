@@ -27,16 +27,31 @@ if ! command -v jq >/dev/null 2>&1; then
   echo "WARNING: 'jq' is not installed — the status line needs it (e.g. 'sudo dnf install jq')."
 fi
 
-cat <<'EOF'
+cat <<EOF
 
-Almost done. Add this block to ~/.claude/settings.json (merge into the
-top-level object — do not replace the whole file):
+Almost done. Add these blocks to ~/.claude/settings.json (merge into the
+top-level object — do not replace the whole file; if "enabledPlugins" or
+"extraKnownMarketplaces" already exist, add the entries inside them):
 
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh",
     "refreshInterval": 10
+  },
+  "enabledPlugins": {
+    "token-ledger@claude-dotfiles": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-dotfiles": {
+      "source": {
+        "source": "directory",
+        "path": "${DOTFILES_DIR}/claude/mods"
+      }
+    }
   }
+
+The token-ledger mod feeds the "tok in/out", sparkline and "sub" segments;
+without it the status line still works, just without those.
 
 Then restart Claude Code (or open /statusline) to see it.
 Right-aligned model/effort require Claude Code v2.1.153+; older versions
